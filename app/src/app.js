@@ -12,8 +12,9 @@ class PrivateTransferManager {
     this.provider = provider;
     this.userPrivateKey = privateKey;
     this.wallet = new ethers.Wallet(privateKey, provider);
+    // for now just assume relayer wallet is hardcoded here
     this.relayerWallet = new ethers.Wallet(
-      "0x6699bdd993157bdf09535edda1d4649de569f45b3166a63b8bcafcd2811e0bac", // relayer private key (change this to something for your own use)
+      "YOUR_PRIVATE_KEY", // relayer private key (change this to something for your own use)
       provider
     );
     this.contract = new ethers.Contract(
@@ -43,10 +44,7 @@ class PrivateTransferManager {
         "pending"
       )) + 1;
 
-    console.log("🚀 ~ PrivateTransferManager ~ deposit ~ nonceTx:", nonceTx); //remmove
     const commitment = this.generateCommitment(this.userPrivateKey, nonceTx);
-    const balance = await this.provider.getBalance(this.wallet.address); // remove
-    console.log("🚀 ~ PrivateTransferManager ~ deposit ~ balance:", balance); //remove
 
     try {
       const tx = await this.contract.deposit(BigInt(commitment), {
@@ -66,13 +64,6 @@ class PrivateTransferManager {
     console.log(
       `🔒 Starting private transfer of ${amountInWei} to ${recipient}...`
     );
-
-    let lastTime = Date.now();
-    const logTime = (label) => {
-      const now = Date.now();
-      console.log(`⏱️  ${label}: ${(now - lastTime) / 1000 / 60}mins`);
-    };
-    logTime("Start");
 
     // Calculate commitment and nullifier
     const commitment = this.generateCommitment(
@@ -103,10 +94,6 @@ class PrivateTransferManager {
       "../circuit/setup/circuit.wasm",
       "../circuit/setup/circuit_final.zkey"
     );
-    console.log(
-      "🚀 ~ PrivateTransferManager ~ privateTransfer ~ publicSignals:",
-      publicSignals
-    );
 
     const vk = JSON.parse(
       fs.readFileSync("../circuit/setup/verification_key.json")
@@ -127,16 +114,11 @@ class PrivateTransferManager {
 
     // Wait for zkVerify confirmation
     const transactionInfo = await transactionResult;
-    logTime("zkVerify confirmation");
-    console.log(
-      "🚀 ~ PrivateTransferManager ~ privateTransfer ~ transactionInfo:",
-      transactionInfo
-    );
+
     const receipt = await this.zkSession.waitForAggregationReceipt(
       transactionInfo.domainId,
       transactionInfo.aggregationId
     );
-    logTime("Aggregation receipt");
 
     const statementPathResult = await this.zkSession.getAggregateStatementPath(
       receipt.blockHash,
@@ -145,11 +127,8 @@ class PrivateTransferManager {
       transactionInfo.statement
     );
 
-    console.log("wait 1m"); // remove this
-    // await new Promise((resolve) => setTimeout(resolve, 60000)); // wait 1m
     // wait to have enough time for relayer to submit on-chains
-    await new Promise((resolve) => setTimeout(resolve, 40000)); // wait 1m
-    console.log("wait 1m done!"); // remove this
+    await new Promise((resolve) => setTimeout(resolve, 40000)); // wait 40s
 
     console.log("🚀 Executing private transfer...");
     const tx = await this.contract.privateTransfer(
@@ -166,7 +145,6 @@ class PrivateTransferManager {
 
     const receiptTx = await tx.wait();
     console.log(`✅ Private transfer completed! Tx: ${receiptTx.hash}`);
-    logTime("Finish");
     return {
       txHash: receiptTx.hash,
     };
@@ -206,13 +184,11 @@ async function main() {
   // 2. Execute private transfer
   const result = await manager.privateTransfer(
     "0x224ECBb02B07601d21a5714BB23571Dd124F9ED6", // recipient
-    // "0x77468c757DB376F9bc216e75aAAd61eC9fC02DDD",
     amountToSend,
     nonce
   );
 
   console.log("🎉 Private transfer completed!");
-  console.log(`Transaction hash: ${result.txHash}`);
 }
 
 main().catch(console.error);
