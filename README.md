@@ -7,10 +7,9 @@ A privacy-preserving Ethereum transfer system that uses zero-knowledge proofs to
 ### Overview
 This system allows users to transfer ETH privately by breaking the on-chain link between sender and recipient through a pool-based approach combined with zero-knowledge proofs.
 
-### Architecture Components
-
 ### High Level Architecture
 
+```
 ┌─────────────────────┐    1. Generate ZK Proof     ┌─────────────────────┐
 │                     │ ──────────────────────────▶ │                     │
 │   User Application  │                             │     zkVerify        │
@@ -50,6 +49,9 @@ This system allows users to transfer ETH privately by breaking the on-chain link
 │   Ethereum Chain    │
 │  (Settlement Layer) │
 └─────────────────────┘
+```
+
+### Architecture Components
 
 #### 1. Smart Contract (Pool)
 - Acts as an ETH pool that holds deposited funds
